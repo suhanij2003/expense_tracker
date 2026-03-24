@@ -49,7 +49,7 @@ export default function Profile() {
   const handleSave = () => {
     updateUser({ ...user, ...formData });
     setIsEditing(false);
-    showSnackbar('Profile updated successfully! ');
+    showSnackbar('Profile updated successfully 🎉');
   };
 
   const permissions = [

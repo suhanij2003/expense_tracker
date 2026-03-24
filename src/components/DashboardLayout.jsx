@@ -21,7 +21,6 @@ import {
   useMediaQuery,
   useTheme as useMuiTheme,
   Tooltip,
-  Badge,
 } from '@mui/material';
 import {
   Menu as MenuIcon,
@@ -32,11 +31,11 @@ import {
   DarkMode as DarkModeIcon,
   LightMode as LightModeIcon,
   Logout as LogoutIcon,
-  Notifications as NotificationsIcon,
   Home as HomeIcon,
   ChevronLeft as ChevronLeftIcon,
   ChevronRight as ChevronRightIcon,
 } from '@mui/icons-material';
+import Notification from './Notification';
 
 const DRAWER_WIDTH = 260;
 
@@ -318,13 +317,7 @@ export default function DashboardLayout({ children }) {
             </Tooltip>
             
             {/* Notifications */}
-            <Tooltip title="Notifications">
-              <IconButton>
-                <Badge badgeContent={3} color="error">
-                  <NotificationsIcon />
-                </Badge>
-              </IconButton>
-            </Tooltip>
+            <Notification />
             
             {/* User Menu */}
             <Tooltip title="Account">

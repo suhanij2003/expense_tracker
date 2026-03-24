@@ -54,7 +54,7 @@ export default function Settings() {
   };
 
   const handleSave = () => {
-    showSnackbar('Settings saved successfully! ✅');
+    showSnackbar('Settings updated successfully ⚙️');
   };
 
   return (
