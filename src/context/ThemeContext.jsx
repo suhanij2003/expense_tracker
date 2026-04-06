@@ -1,140 +1,69 @@
-import { createContext, useContext, useState, useEffect, useMemo } from 'react';
+import { createContext, useContext, useState, useEffect } from 'react';
 import { ThemeProvider as MuiThemeProvider, createTheme } from '@mui/material/styles';
 import CssBaseline from '@mui/material/CssBaseline';
 
-const ThemeContext = createContext(null);
+const ThemeContext = createContext();
 
-export function ThemeProvider({ children }) {
+export const useTheme = () => useContext(ThemeContext);
+
+export const ThemeProvider = ({ children }) => {
   const [mode, setMode] = useState(() => {
-    const saved = localStorage.getItem('theme_mode');
-    return saved || 'light';
+    const savedMode = localStorage.getItem('themeMode');
+    return savedMode || 'light';
   });
 
   useEffect(() => {
-    localStorage.setItem('theme_mode', mode);
+    localStorage.setItem('themeMode', mode);
     document.documentElement.setAttribute('data-theme', mode);
   }, [mode]);
 
   const toggleTheme = () => {
-    setMode(prev => prev === 'light' ? 'dark' : 'light');
+    setMode((prevMode) => (prevMode === 'light' ? 'dark' : 'light'));
   };
 
-  const theme = useMemo(() => createTheme({
+  const theme = createTheme({
     palette: {
       mode,
       primary: {
-        main: '#667eea',
-        light: '#8b9ff8',
-        dark: '#4c5fd8',
-        contrastText: '#ffffff',
+        main: mode === 'light' ? '#1976d2' : '#90caf9',
       },
       secondary: {
-        main: '#764ba2',
-        light: '#9575cd',
-        dark: '#5d3a8e',
-        contrastText: '#ffffff',
-      },
-      success: {
-        main: '#48bb78',
-        light: '#68d391',
-        dark: '#38a169',
-      },
-      error: {
-        main: '#e53e3e',
-        light: '#fc8181',
-        dark: '#c53030',
-      },
-      warning: {
-        main: '#ed8936',
-        light: '#f6ad55',
-        dark: '#dd6b20',
-      },
-      info: {
-        main: '#4299e1',
-        light: '#63b3ed',
-        dark: '#3182ce',
+        main: mode === 'light' ? '#dc004e' : '#f48fb1',
       },
       background: {
-        default: mode === 'light' ? '#f8fafc' : '#0f172a',
-        paper: mode === 'light' ? '#ffffff' : '#1e293b',
-      },
-      text: {
-        primary: mode === 'light' ? '#1e293b' : '#f1f5f9',
-        secondary: mode === 'light' ? '#64748b' : '#94a3b8',
-      },
-      divider: mode === 'light' ? 'rgba(0, 0, 0, 0.08)' : 'rgba(255, 255, 255, 0.08)',
-      action: {
-        hover: mode === 'light' ? 'rgba(102, 126, 234, 0.08)' : 'rgba(255, 255, 255, 0.08)',
-        selected: mode === 'light' ? 'rgba(102, 126, 234, 0.12)' : 'rgba(255, 255, 255, 0.12)',
-        disabled: mode === 'light' ? 'rgba(0, 0, 0, 0.26)' : 'rgba(255, 255, 255, 0.3)',
-        disabledBackground: mode === 'light' ? 'rgba(0, 0, 0, 0.12)' : 'rgba(255, 255, 255, 0.12)',
+        default: mode === 'light' ? '#f5f5f5' : '#121212',
+        paper: mode === 'light' ? '#ffffff' : '#1e1e1e',
       },
     },
     typography: {
-      fontFamily: '"Inter", "Roboto", "Helvetica", "Arial", sans-serif',
-      h1: { fontWeight: 700 },
-      h2: { fontWeight: 700 },
-      h3: { fontWeight: 600 },
-      h4: { fontWeight: 600 },
-      h5: { fontWeight: 600 },
-      h6: { fontWeight: 600 },
-      subtitle1: { fontWeight: 500 },
-      subtitle2: { fontWeight: 500 },
-      button: { fontWeight: 600, textTransform: 'none' },
+      fontFamily: '"Roboto", "Helvetica", "Arial", sans-serif',
+      h1: { fontSize: '2.5rem', fontWeight: 700 },
+      h2: { fontSize: '2rem', fontWeight: 600 },
+      h3: { fontSize: '1.75rem', fontWeight: 600 },
+      h4: { fontSize: '1.5rem', fontWeight: 500 },
+      h5: { fontSize: '1.25rem', fontWeight: 500 },
+      h6: { fontSize: '1rem', fontWeight: 500 },
     },
-    shape: {
-      borderRadius: 12,
-    },
-    shadows: [
-      'none',
-      '0 1px 2px 0 rgba(0, 0, 0, 0.05)',
-      '0 1px 3px 0 rgba(0, 0, 0, 0.1), 0 1px 2px 0 rgba(0, 0, 0, 0.06)',
-      '0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -1px rgba(0, 0, 0, 0.06)',
-      '0 10px 15px -3px rgba(0, 0, 0, 0.1), 0 4px 6px -2px rgba(0, 0, 0, 0.05)',
-      '0 20px 25px -5px rgba(0, 0, 0, 0.1), 0 10px 10px -5px rgba(0, 0, 0, 0.04)',
-      '0 25px 50px -12px rgba(0, 0, 0, 0.25)',
-      '0 25px 50px -12px rgba(0, 0, 0, 0.25)',
-      '0 25px 50px -12px rgba(0, 0, 0, 0.25)',
-      '0 25px 50px -12px rgba(0, 0, 0, 0.25)',
-      '0 25px 50px -12px rgba(0, 0, 0, 0.25)',
-      '0 25px 50px -12px rgba(0, 0, 0, 0.25)',
-      '0 25px 50px -12px rgba(0, 0, 0, 0.25)',
-      '0 25px 50px -12px rgba(0, 0, 0, 0.25)',
-      '0 25px 50px -12px rgba(0, 0, 0, 0.25)',
-      '0 25px 50px -12px rgba(0, 0, 0, 0.25)',
-      '0 25px 50px -12px rgba(0, 0, 0, 0.25)',
-      '0 25px 50px -12px rgba(0, 0, 0, 0.25)',
-      '0 25px 50px -12px rgba(0, 0, 0, 0.25)',
-      '0 25px 50px -12px rgba(0, 0, 0, 0.25)',
-      '0 25px 50px -12px rgba(0, 0, 0, 0.25)',
-      '0 25px 50px -12px rgba(0, 0, 0, 0.25)',
-      '0 25px 50px -12px rgba(0, 0, 0, 0.25)',
-      '0 25px 50px -12px rgba(0, 0, 0, 0.25)',
-      '0 25px 50px -12px rgba(0, 0, 0, 0.25)',
-    ],
     components: {
-      MuiButton: {
+      MuiCard: {
         styleOverrides: {
           root: {
-            borderRadius: 8,
-            padding: '8px 20px',
-            fontWeight: 600,
-          },
-          contained: {
-            boxShadow: '0 2px 4px rgba(102, 126, 234, 0.3)',
+            transition: 'transform 0.3s ease-in-out, box-shadow 0.3s ease-in-out',
             '&:hover': {
-              boxShadow: '0 4px 8px rgba(102, 126, 234, 0.4)',
+              transform: 'translateY(-4px)',
+              boxShadow: mode === 'light' 
+                ? '0 8px 16px rgba(0, 0, 0, 0.15)' 
+                : '0 8px 16px rgba(0, 0, 0, 0.4)',
             },
           },
         },
       },
-      MuiCard: {
+      MuiButton: {
         styleOverrides: {
           root: {
-            borderRadius: 16,
-            boxShadow: mode === 'light' 
-              ? '0 4px 20px rgba(0, 0, 0, 0.08)' 
-              : '0 4px 20px rgba(0, 0, 0, 0.3)',
+            borderRadius: 8,
+            textTransform: 'none',
+            transition: 'all 0.3s ease-in-out',
           },
         },
       },
@@ -145,76 +74,8 @@ export function ThemeProvider({ children }) {
           },
         },
       },
-      MuiTableHead: {
-        styleOverrides: {
-          root: {
-            '& .MuiTableCell-head': {
-              backgroundColor: mode === 'light' ? '#f8fafc' : '#1e293b',
-              fontWeight: 600,
-              color: mode === 'light' ? '#475569' : '#cbd5e1',
-            },
-          },
-        },
-      },
-      MuiTableCell: {
-        styleOverrides: {
-          root: {
-            borderBottom: mode === 'light' 
-              ? '1px solid rgba(0, 0, 0, 0.06)' 
-              : '1px solid rgba(255, 255, 255, 0.06)',
-          },
-        },
-      },
-      MuiTableRow: {
-        styleOverrides: {
-          root: {
-            '&:hover': {
-              backgroundColor: mode === 'light' 
-                ? 'rgba(102, 126, 234, 0.04)' 
-                : 'rgba(255, 255, 255, 0.04)',
-            },
-          },
-        },
-      },
-      MuiChip: {
-        styleOverrides: {
-          root: {
-            fontWeight: 600,
-          },
-        },
-      },
-      MuiTextField: {
-        styleOverrides: {
-          root: {
-            '& .MuiOutlinedInput-root': {
-              borderRadius: 8,
-            },
-          },
-        },
-      },
-      MuiDialog: {
-        styleOverrides: {
-          paper: {
-            borderRadius: 16,
-          },
-        },
-      },
-      MuiDrawer: {
-        styleOverrides: {
-          paper: {
-            borderRadius: 0,
-          },
-        },
-      },
-      MuiAppBar: {
-        styleOverrides: {
-          root: {
-            backgroundImage: 'none',
-          },
-        },
-      },
     },
-  }), [mode]);
+  });
 
   return (
     <ThemeContext.Provider value={{ mode, toggleTheme }}>
@@ -224,14 +85,6 @@ export function ThemeProvider({ children }) {
       </MuiThemeProvider>
     </ThemeContext.Provider>
   );
-}
+};
 
-export function useTheme() {
-  const context = useContext(ThemeContext);
-  if (!context) {
-    throw new Error('useTheme must be used within a ThemeProvider');
-  }
-  return context;
-}
-
-export default ThemeContext;
+export default ThemeProvider;

@@ -1,305 +1,216 @@
 import { useState } from 'react';
-import { useNavigate } from 'react-router-dom';
-import { useAuth, ROLE_LABELS } from '../context/AuthContext';
-import { useTheme } from '../context/ThemeContext';
+import { useNavigate, useLocation } from 'react-router-dom';
 import {
   Box,
   Card,
-  CardContent,
-  TextField,
-  MenuItem,
   Button,
   Typography,
-  IconButton,
-  InputAdornment,
   Avatar,
-  Chip,
+  Alert,
+  CircularProgress,
   Paper,
+  ToggleButton,
+  ToggleButtonGroup,
 } from '@mui/material';
 import {
-  Visibility as VisibilityIcon,
-  DarkMode as DarkModeIcon,
-  LightMode as LightModeIcon,
-  Lock as LockIcon,
+  Dashboard as DashboardIcon,
+  AdminPanelSettings as AdminIcon,
+  ManageAccounts as ManagerIcon,
+  Visibility as ViewerIcon,
 } from '@mui/icons-material';
+import { useAuth, ROLES } from '../context/AuthContext';
+// Snackbar context removed; using React Toastify for notifications
+import { toast } from 'react-toastify';
 
-export default function Login() {
-  const [selectedRole, setSelectedRole] = useState('admin');
-  const [userName, setUserName] = useState('suhani');
+const Login = () => {
+  const [selectedRole, setSelectedRole] = useState(ROLES.ADMIN);
+  const [loading, setLoading] = useState(false);
+
   const { login } = useAuth();
-  const { mode, toggleTheme } = useTheme();
+  // Removed unused Snackbar context
   const navigate = useNavigate();
+  const location = useLocation();
 
-  const handleLogin = (e) => {
-    e.preventDefault();
-    login(selectedRole, userName || 'suhani');
-    navigate('/dashboard');
+  const from = location.state?.from?.pathname || '/';
+
+  const handleLogin = async () => {
+    setLoading(true);
+
+    try {
+      const result = await login(null, null, selectedRole);
+      if (result.success) {
+        toast.success(result.message || 'Login successful!');
+        navigate(from, { replace: true });
+      }
+    } catch (err) {
+      console.error('Login failed');
+    } finally {
+      setLoading(false);
+    }
   };
-
-  const roles = [
-    { id: 'admin', label: 'Admin', description: 'Full access' },
-    { id: 'manager', label: 'Manager', description: 'View & Edit' },
-    { id: 'viewer', label: 'Viewer', description: 'View only' },
-  ];
 
   return (
     <Box
       sx={{
         minHeight: '100vh',
+        width: '100vw',
         display: 'flex',
         alignItems: 'center',
-        justifyContent: 'center',
-        position: 'relative',
-        overflow: 'hidden',
-        // Gradient background with pattern
-        background: mode === 'dark'
-          ? 'linear-gradient(135deg, #1a1a2e 0%, #16213e 50%, #0f3460 100%)'
-          : 'linear-gradient(135deg, #667eea 0%, #764ba2 50%, #f093fb 100%)',
-        '&::before': {
-          content: '""',
-          position: 'absolute',
-          top: 0,
-          left: 0,
-          right: 0,
-          bottom: 0,
-          background: `url("data:image/svg+xml,%3Csvg width='60' height='60' viewBox='0 0 60 60' xmlns='http://www.w3.org/2000/svg'%3E%3Cg fill='none' fill-rule='evenodd'%3E%3Cg fill='%23ffffff' fill-opacity='0.05'%3E%3Cpath d='M36 34v-4h-2v4h-4v2h4v4h2v-4h4v-2h-4zm0-30V0h-2v4h-4v2h4v4h2V6h4V4h-4zM6 34v-4H4v4H0v2h4v4h2v-4h4v-2H6zM6 4V0H4v4H0v2h4v4h2V6h4V4H6z'/%3E%3C/g%3E%3C/g%3E%3C/svg%3E")`,
-          opacity: 0.5,
-        },
+        justifyContent: 'flex-end', // Position on the right
+        backgroundImage: 'linear-gradient(rgba(0, 0, 0, 0.2), rgba(0, 0, 0, 0.2)), url(/image_login.jpg)',
+        backgroundSize: 'cover',
+        backgroundPosition: 'center',
+        backgroundAttachment: 'fixed',
+        p: { xs: 2, md: 10 },
+        overflow: 'hidden'
       }}
     >
-      {/* Floating decorative elements */}
-      <Box
-        sx={{
-          position: 'absolute',
-          top: '10%',
-          left: '10%',
-          width: 200,
-          height: 200,
-          borderRadius: '50%',
-          background: 'rgba(255,255,255,0.1)',
-          filter: 'blur(40px)',
-          animation: 'float 6s ease-in-out infinite',
-        }}
-      />
-      <Box
-        sx={{
-          position: 'absolute',
-          bottom: '20%',
-          right: '15%',
-          width: 300,
-          height: 300,
-          borderRadius: '50%',
-          background: 'rgba(255,255,255,0.08)',
-          filter: 'blur(50px)',
-          animation: 'float 8s ease-in-out infinite reverse',
-        }}
-      />
-
-      {/* Theme Toggle */}
-      <IconButton
-        onClick={toggleTheme}
-        sx={{
-          position: 'fixed',
-          top: 20,
-          right: 20,
-          color: 'white',
-          bgcolor: 'rgba(255,255,255,0.2)',
-          backdropFilter: 'blur(10px)',
-          '&:hover': { 
-            bgcolor: 'rgba(255,255,255,0.3)',
-            transform: 'scale(1.1)',
-          },
-          transition: 'all 0.3s ease',
-        }}
-      >
-        {mode === 'dark' ? <LightModeIcon /> : <DarkModeIcon />}
-      </IconButton>
-
       <Card
         sx={{
-          maxWidth: 480,
-          width: '100%',
-          mx: 2,
-          borderRadius: 4,
-          boxShadow: '0 25px 80px rgba(0,0,0,0.35)',
-          position: 'relative',
-          overflow: 'visible',
-          animation: 'slideUp 0.5s ease-out',
+          // maxWidth: 520, // Increased width
+          width: '33%',
+          p: { xs: 4, md: 6 },
+          borderRadius: '48px', // More rounded
+          background: 'transparent',
+          backdropFilter: 'blur(10px) saturate(160%)',
+          WebkitBackdropFilter: 'blur(10px) saturate(160%)',
+          border: '1px solid rgba(255, 255, 255, 0.4)',
+          boxShadow: '0 8px 32px 0 rgba(0, 0, 0, 0.25)',
+          textAlign: 'center',
+          color: 'white', // Ensure text is visible on transparent background
         }}
       >
-        {/* Decorative top bar */}
-        <Box
-          sx={{
-            height: 8,
-            background: 'linear-gradient(90deg, #667eea 0%, #764ba2 100%)',
-            borderRadius: '4px 4px 0 0',
-          }}
-        />
-        
-        <CardContent sx={{ p: 4 }}>
-          {/* Header */}
-          <Box sx={{ textAlign: 'center', mb: 4 }}>
-            <Avatar
-              sx={{
-                width: 90,
-                height: 90,
-                mx: 'auto',
-                mb: 2,
-                background: 'linear-gradient(135deg, #667eea 0%, #764ba2 100%)',
-                fontSize: '2.5rem',
-                boxShadow: '0 8px 32px rgba(102, 126, 234, 0.4)',
-              }}
-            >
-              <LockIcon sx={{ fontSize: 40 }} />
-            </Avatar>
-            <Typography variant="h4" component="h1" fontWeight="bold" gutterBottom>
-              Welcome Back
-            </Typography>
-            <Typography variant="body1" color="text.secondary">
-              Sign in to access your dashboard
-            </Typography>
-          </Box>
+        <Box sx={{ mb: 4 }}>
+          <Avatar
+            sx={{
+              width: 60,
+              height: 60,
+              mx: 'auto',
+              mb: 2,
+              bgcolor: 'rgba(55, 54, 54, 0.8)',
+              boxShadow: '0 4px 20px rgba(0,0,0,0.2)',
+            }}
+          >
+            <DashboardIcon sx={{ fontSize: 30 }} />
+          </Avatar>
+          <Typography variant="h4" sx={{ fontWeight: 800, mb: 1, textShadow: '0 1px 2px rgba(0,0,0,0.1)', color: 'rgba(55, 54, 54, 0.8)' }}>
+            Expense Tracker
+          </Typography>
+          <Typography variant="body2" sx={{ color: 'rgba(55, 54, 54, 0.8)', fontWeight: 500 }}>
+            Securely access your dashboard
+          </Typography>
+        </Box>
 
-          {/* Form */}
-          <form onSubmit={handleLogin}>
-            {/* Name Input */}
-            <TextField
-              fullWidth
-              label="Your Name"
-              value={userName}
-              onChange={(e) => setUserName(e.target.value)}
-              placeholder="Enter your name"
-              margin="normal"
-              variant="outlined"
-              sx={{ mb: 2 }}
-            />
+        <Box sx={{ display: 'flex', flexDirection: 'column', gap: 2.5 }}>
+          <Typography variant="subtitle2" sx={{ fontWeight: 700, textAlign: 'left', px: 1, color: 'rgba(55, 54, 54, 0.8)' }}>
+            Select Account Type:
+          </Typography>
 
-            {/* Role Select */}
-            <TextField
-              fullWidth
-              select
-              label="Select Role"
-              value={selectedRole}
-              onChange={(e) => setSelectedRole(e.target.value)}
-              margin="normal"
-              variant="outlined"
-            >
-              {roles.map((role) => (
-                <MenuItem key={role.id} value={role.id}>
-                  <Box sx={{ display: 'flex', alignItems: 'center', gap: 1.5, width: '100%' }}>
-                    <Avatar 
-                      sx={{ 
-                        width: 32, 
-                        height: 32, 
-                        fontSize: '0.875rem',
-                        bgcolor: role.id === 'admin' ? 'primary.main' : 
-                               role.id === 'manager' ? 'secondary.main' : 'grey.500'
-                      }}
-                    >
-                      {role.label.charAt(0)}
-                    </Avatar>
-                    <Box sx={{ flex: 1 }}>
-                      <Typography variant="body2" fontWeight="500">{role.label}</Typography>
-                    </Box>
-                    <Chip label={role.description} size="small" variant="outlined" />
-                  </Box>
-                </MenuItem>
-              ))}
-            </TextField>
+          <ToggleButtonGroup
+            value={selectedRole}
+            exclusive
+            onChange={(e, value) => value && setSelectedRole(value)}
+            fullWidth
+            sx={{
+              mb: 1,
+              gap: 1.5,
+              '& .MuiToggleButtonGroup-grouped': {
+                border: '1px solid rgba(255, 255, 255, 0.2) !important',
+                borderRadius: '16px !important',
+                background: 'transparent',
+                color: 'rgba(55, 54, 54, 0.8)',
+                transition: 'all 0.3s cubic-bezier(0.4, 0, 0.2, 1)',
 
-            {/* Role Preview */}
-            <Paper
-              sx={{
-                mt: 3,
-                p: 2,
-                bgcolor: 'action.hover',
-                borderRadius: 2,
-              }}
-            >
-              <Typography variant="body2" color="text.secondary" gutterBottom>
-                Your permissions as {ROLE_LABELS[selectedRole]}:
-              </Typography>
-              <Box sx={{ display: 'flex', gap: 1, flexWrap: 'wrap' }}>
-                <Chip 
-                  label="View" 
-                  color="success" 
-                  size="small" 
-                  icon={<VisibilityIcon sx={{ fontSize: 14 }} />}
-                />
-                {selectedRole !== 'viewer' && (
-                  <Chip 
-                    label="Edit" 
-                    color="success" 
-                    size="small" 
-                  />
-                )}
-                {selectedRole === 'admin' && (
-                  <Chip 
-                    label="Delete" 
-                    color="success" 
-                    size="small" 
-                  />
-                )}
-                {selectedRole === 'viewer' && (
-                  <Chip 
-                    label="Edit" 
-                    color="error" 
-                    size="small" 
-                    sx={{ opacity: 0.7 }}
-                  />
-                )}
-                {selectedRole !== 'admin' && (
-                  <Chip 
-                    label="Delete" 
-                    color="error" 
-                    size="small" 
-                    sx={{ opacity: 0.7 }}
-                  />
-                )}
-              </Box>
-            </Paper>
-
-            {/* Login Button */}
-            <Button
-              type="submit"
-              fullWidth
-              variant="contained"
-              size="large"
-              sx={{
-                mt: 3,
-                py: 1.5,
-                fontSize: '1rem',
-                fontWeight: 'bold',
-                borderRadius: 2,
-                background: 'linear-gradient(135deg, #667eea 0%, #764ba2 100%)',
-                boxShadow: '0 8px 24px rgba(102, 126, 234, 0.4)',
                 '&:hover': {
-                  background: 'linear-gradient(135deg, #5a6fd6 0%, #6a4190 100%)',
-                  boxShadow: '0 12px 32px rgba(102, 126, 234, 0.5)',
+                  background: 'rgba(255, 255, 255, 0.25)',
                   transform: 'translateY(-2px)',
                 },
-                transition: 'all 0.3s ease',
-              }}
-            >
-              Sign In
-            </Button>
-          </form>
-        </CardContent>
-      </Card>
 
-      {/* CSS Animations */}
-      <style>
-        {`
-          @keyframes float {
-            0%, 100% { transform: translateY(0px); }
-            50% { transform: translateY(-20px); }
-          }
-          @keyframes slideUp {
-            from { opacity: 0; transform: translateY(30px); }
-            to { opacity: 1; transform: translateY(0); }
-          }
-        `}
-      </style>
+                '&.Mui-selected': {
+                  background: 'rgb(169, 145, 126)', // ✅ your color
+                  color: 'rgba(55, 54, 54, 0.8)', // better contrast (optional)
+
+                  boxShadow: '0 4px 15px rgba(0,0,0,0.2)',
+
+                  '&:hover': {
+                    background: 'rgb(169, 145, 126)'
+                  },
+
+                  '& .MuiTypography-root': {
+                    color: '#000',
+                  },
+
+                  '& .MuiSvgIcon-root': {
+                    color: '#000)',
+                  }
+                },
+              }
+            }}
+          >
+            <ToggleButton
+              value={ROLES.ADMIN}
+              sx={{ flexDirection: 'column', py: 1.5, flex: 1 }}
+            >
+              <AdminIcon sx={{ fontSize: 24, mb: 0.5 }} />
+              <Typography variant="caption" fontWeight="bold">Admin</Typography>
+            </ToggleButton>
+            <ToggleButton
+              value={ROLES.MANAGER}
+              sx={{ flexDirection: 'column', py: 1.5, flex: 1 }}
+            >
+              <ManagerIcon sx={{ fontSize: 24, mb: 0.5 }} />
+              <Typography variant="caption" fontWeight="bold">Manager</Typography>
+            </ToggleButton>
+            <ToggleButton
+              value={ROLES.VIEWER}
+              sx={{ flexDirection: 'column', py: 1.5, flex: 1 }}
+            >
+              <ViewerIcon sx={{ fontSize: 24, mb: 0.5 }} />
+              <Typography variant="caption" fontWeight="bold">Viewer</Typography>
+            </ToggleButton>
+          </ToggleButtonGroup>
+
+          <Button
+            variant="contained"
+            size="large"
+            onClick={handleLogin}
+            disabled={loading}
+            sx={{
+              py: 1.5,
+              borderRadius: '16px',
+              fontSize: '1rem',
+              textTransform: 'none',
+              fontWeight: 700,
+              boxShadow: '0 4px 12px rgba(0,0,0,0.2)',
+              background: 'rgb(169, 145, 126)',
+              '&:hover': {
+                background: 'rgb(169, 145, 126)', // slightly darker
+                transform: 'translateY(-1px)',
+                boxShadow: '0 6px 16px rgba(0,0,0,0.3)',
+              }
+            }}
+          >
+            {loading ? <CircularProgress size={24} color="rgba(55, 54, 54, 0.8)" /> : `Enter Dashboard`}
+          </Button>
+        </Box>
+
+        <Paper
+          elevation={0}
+          sx={{
+            mt: 4,
+            p: 2,
+            borderRadius: '16px',
+            background: 'transparent',
+            border: '1px solid rgba(255, 255, 255, 0.1)'
+          }}
+        >
+          <Typography variant="caption" color="rgba(55, 54, 54, 0.8)" sx={{ display: 'block', fontStyle: 'italic' }}>
+            Choose a role to explore different access levels and features of the expense tracking system.
+          </Typography>
+        </Paper>
+      </Card>
     </Box>
   );
-}
+};
+
+export default Login;

@@ -1,59 +1,138 @@
-export default function Pagination({ total, setPage, currentPage = 1 }) {
-  const perPage = 5;
-  const pages = Math.ceil(total / perPage);
+import { 
+  Box, 
+  Select, 
+  MenuItem, 
+  FormControl, 
+  Typography, 
+  IconButton, 
+  Paper,
+  Tooltip
+} from '@mui/material';
+import { 
+  ChevronLeft as LeftIcon, 
+  ChevronRight as RightIcon,
+} from '@mui/icons-material';
 
-  const handlePageClick = (pageNum) => {
-    setPage(pageNum);
-    window.scrollTo({ top: 0, behavior: "smooth" });
+const Pagination = ({ 
+  count, 
+  page, 
+  onPageChange, 
+  rowsPerPage, 
+  onRowsPerPageChange, 
+  rowsPerPageOptions = [5, 10, 25, 50] 
+}) => {
+  // Generate a list of pages to show (handles ellipses if too many)
+  const getPageNumbers = () => {
+    const pages = [];
+    const maxVisible = 5;
+    
+    if (count <= maxVisible) {
+      for (let i = 1; i <= count; i++) pages.push(i);
+    } else {
+      let start = Math.max(1, page - 2);
+      let end = Math.min(count, start + maxVisible - 1);
+      
+      if (end === count) {
+        start = Math.max(1, end - maxVisible + 1);
+      }
+      
+      for (let i = start; i <= end; i++) pages.push(i);
+    }
+    return pages;
   };
 
-  if (pages <= 1) return null;
+  const pages = getPageNumbers();
 
   return (
-    <div className="pagination-container">
-      {/* Previous Button */}
-      {currentPage > 1 && (
-        <button 
-          onClick={() => handlePageClick(currentPage - 1)}
-          className="btn btn-primary"
+    <Box
+      sx={{
+        display: 'flex',
+        justifyContent: 'center',
+        alignItems: 'center',
+        flexWrap: 'wrap',
+        gap: 3,
+        mt: 4,
+        pt: 2,
+        borderTop: '1px solid',
+        borderColor: 'divider',
+        pb: 2
+      }}
+    >
+      <Box sx={{ display: 'flex', alignItems: 'center', gap: 0.5 }}>
+        <Tooltip title="Previous">
+          <IconButton 
+            size="small" 
+            disabled={page === 1}
+            onClick={(e) => onPageChange(e, page - 1)}
+            sx={{ mr: 1, bgcolor: 'action.hover' }}
+          >
+            <LeftIcon fontSize="small" />
+          </IconButton>
+        </Tooltip>
+
+        <Box 
+          sx={{ 
+            display: 'flex', 
+            alignItems: 'center',
+            position: 'relative'
+          }}
         >
-          ← Previous
-        </button>
-      )}
+          {pages.map((p, index) => {
+            const isActive = p === page;
+            
+            return (
+              <Paper
+                key={p}
+                elevation={isActive ? 8 : 1}
+                onClick={(e) => onPageChange(e, p)}
+                sx={{
+                  display: 'flex',
+                  alignItems: 'center',
+                  justifyContent: 'center',
+                  width: isActive ? 48 : 38,
+                  height: isActive ? 48 : 38,
+                  cursor: 'pointer',
+                  borderRadius: '50%',
+                  fontSize: isActive ? '1.1rem' : '0.9rem',
+                  fontWeight: isActive ? 800 : 600,
+                  bgcolor: isActive ? 'primary.main' : 'background.paper',
+                  color: isActive ? 'primary.contrastText' : 'text.secondary',
+                  border: '1px solid',
+                  borderColor: isActive ? 'primary.main' : 'divider',
+                  transition: 'all 0.3s cubic-bezier(0.4, 0, 0.2, 1)',
+                  zIndex: isActive ? 10 : 5 - Math.abs(index - pages.indexOf(page)),
+                  ml: index === 0 ? 0 : -1.5,
+                  boxShadow: isActive 
+                    ? '0 8px 16px rgba(0, 0, 0, 0.15)' 
+                    : '0 2px 4px rgba(0, 0, 0, 0.05)',
+                  '&:hover': {
+                    transform: 'translateY(-4px) scale(1.1)',
+                    zIndex: 20,
+                    bgcolor: isActive ? 'primary.dark' : 'action.hover',
+                    color: isActive ? 'primary.contrastText' : 'primary.main',
+                    boxShadow: '0 12px 20px rgba(0, 0, 0, 0.2)',
+                  }
+                }}
+              >
+                {p}
+              </Paper>
+            );
+          })}
+        </Box>
 
-      {/* Page Numbers */}
-      {Array.from({ length: pages }, (_, i) => {
-        const pageNum = i + 1;
-        if (pageNum === 1 || pageNum === pages || (pageNum >= currentPage - 1 && pageNum <= currentPage + 1)) {
-          return (
-            <button 
-              key={pageNum}
-              onClick={() => handlePageClick(pageNum)}
-              className={`pagination-btn ${currentPage === pageNum ? 'active' : ''}`}
-            >
-              {pageNum}
-            </button>
-          );
-        } else if (pageNum === currentPage - 2 || pageNum === currentPage + 2) {
-          return <span key={pageNum} style={{ padding: "8px 4px" }}>...</span>;
-        }
-        return null;
-      })}
-
-      {/* Next Button */}
-      {currentPage < pages && (
-        <button 
-          onClick={() => handlePageClick(currentPage + 1)}
-          className="btn btn-primary"
-        >
-          Next →
-        </button>
-      )}
-
-      {/* Info */}
-      <span className="pagination-info">
-        Page {currentPage} / {pages}
-      </span>
-    </div>
+        <Tooltip title="Next">
+          <IconButton 
+            size="small" 
+            disabled={page === count}
+            onClick={(e) => onPageChange(e, page + 1)}
+            sx={{ ml: 2, bgcolor: 'action.hover' }}
+          >
+            <RightIcon fontSize="small" />
+          </IconButton>
+        </Tooltip>
+      </Box>
+    </Box>
   );
-}
+};
+
+export default Pagination;

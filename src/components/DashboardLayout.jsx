@@ -1,62 +1,125 @@
-import { useState } from 'react';
-import { useNavigate } from 'react-router-dom';
-import { useAuth, ROLE_LABELS } from '../context/AuthContext';
-import { useTheme } from '../context/ThemeContext';
+import { useState, useEffect, useRef, useCallback } from 'react';
+import { Outlet, useNavigate, useLocation } from 'react-router-dom';
+import { Box, AppBar, Toolbar, Typography, IconButton, Avatar, Menu, MenuItem, ListItemIcon, Divider } from '@mui/material';
 import {
-  Box,
-  AppBar,
-  Toolbar,
-  Typography,
-  Drawer,
-  List,
-  ListItem,
-  ListItemButton,
-  ListItemIcon,
-  ListItemText,
-  IconButton,
-  Avatar,
-  Menu,
-  MenuItem,
-  Divider,
-  useMediaQuery,
-  useTheme as useMuiTheme,
-  Tooltip,
-} from '@mui/material';
-import {
-  Menu as MenuIcon,
-  Dashboard as DashboardIcon,
-  People as PeopleIcon,
   Settings as SettingsIcon,
-  Person as PersonIcon,
-  DarkMode as DarkModeIcon,
-  LightMode as LightModeIcon,
+  AccountCircle as AccountCircleIcon,
   Logout as LogoutIcon,
-  Home as HomeIcon,
-  ChevronLeft as ChevronLeftIcon,
-  ChevronRight as ChevronRightIcon,
+  Brightness4 as DarkModeIcon,
+  Brightness7 as LightModeIcon,
+  Menu as MenuIcon,
 } from '@mui/icons-material';
-import Notification from './Notification';
+import { useMediaQuery, useTheme } from '@mui/material';
+import { useTheme as useCustomTheme } from '../context/ThemeContext';
+import { Tooltip } from '@mui/material'; // Added Tooltip import
+import ThemeSwitch from './ThemeSwitch';
+import LogoutButton from './LogoutButton';
+import CalculatorWidget from './CalculatorWidget';
+import './CustomSidebar.css';
+import { useAuth } from '../context/AuthContext';
+import { ToastContainer, toast } from 'react-toastify';
+import 'react-toastify/dist/ReactToastify.css';
+import { motion, AnimatePresence } from 'framer-motion';
 
-const DRAWER_WIDTH = 260;
+const menuItems = [
+  { id: 'dashboard', label: 'Dashboard', icon: '📊', path: '/' },
+  { id: 'users', label: 'Users', icon: '👥', path: '/users' },
+  { id: 'products', label: 'Products', icon: '📦', path: '/products' },
+  { id: 'orders', label: 'Orders', icon: '🛒', path: '/orders' },
+  { id: 'transactions', label: 'Transactions', icon: '💳', path: '/transactions' },
+  { id: 'analytics', label: 'Analytics', icon: '📈', path: '/analytics' },
+  { id: 'settings', label: 'Settings', icon: '⚙️', path: '/settings' },
+];
 
-export default function DashboardLayout({ children }) {
-  const { user, logout } = useAuth();
-  const { mode, toggleTheme } = useTheme();
-  const navigate = useNavigate();
-  const muiTheme = useMuiTheme();
-  const isMobile = useMediaQuery(muiTheme.breakpoints.down('lg'));
-  
-  const [mobileOpen, setMobileOpen] = useState(false);
-  const [isSidebarOpen, setIsSidebarOpen] = useState(true);
+const DashboardLayout = () => {
+  const theme = useTheme();
+  const isMobile = useMediaQuery(theme.breakpoints.down('md'));
+  const [currentTime, setCurrentTime] = useState(new Date());
   const [anchorEl, setAnchorEl] = useState(null);
+  const [mobileOpen, setMobileOpen] = useState(false);
+  const [collapsed, setCollapsed] = useState(false);
+  const [activeItem, setActiveItem] = useState('dashboard');
+  const sidebarRef = useRef(null);
+  const location = useLocation();
+  const navigate = useNavigate();
+  const { mode, toggleTheme } = useCustomTheme();
+  const { user, logout } = useAuth();
+
+  // Set active item and page title based on current path
+  const pageTitle = menuItems.find(i => i.path === location.pathname)?.label || 'Dashboard';
+  useEffect(() => {
+    const currentPath = location.pathname;
+    const item = menuItems.find(i => i.path === currentPath);
+    if (item) {
+      setActiveItem(item.id);
+    }
+  }, [location]);
+
+  // Handle resize
+  useEffect(() => {
+    const handleResize = () => {
+      if (window.innerWidth < 768) {
+        setMobileOpen(false);
+      }
+    };
+    window.addEventListener('resize', handleResize);
+    return () => window.removeEventListener('resize', handleResize);
+  }, []);
+
+  // Handle click outside
+  useEffect(() => {
+    const handleClickOutside = (event) => {
+      if (sidebarRef.current && !sidebarRef.current.contains(event.target)) {
+        const toggleBtn = document.querySelector('.sidebar-toggle');
+        if (toggleBtn && !toggleBtn.contains(event.target)) {
+          setMobileOpen(false);
+        }
+      }
+    };
+    document.addEventListener('mousedown', handleClickOutside);
+    return () => document.removeEventListener('mousedown', handleClickOutside);
+  }, []);
+
+  // Prevent body scroll when mobile sidebar is open
+  useEffect(() => {
+    if (mobileOpen && window.innerWidth < 768) {
+      document.body.style.overflow = 'hidden';
+    } else {
+      document.body.style.overflow = '';
+    }
+    return () => {
+      document.body.style.overflow = '';
+    };
+  }, [mobileOpen]);
+
+  // Update clock every second
+  useEffect(() => {
+    const timer = setInterval(() => {
+      setCurrentTime(new Date());
+    }, 1000);
+    return () => clearInterval(timer);
+  }, []);
 
   const handleDrawerToggle = () => {
     setMobileOpen(!mobileOpen);
   };
 
-  const handleSidebarToggle = () => {
-    setIsSidebarOpen(!isSidebarOpen);
+  const handleCollapseToggle = () => {
+    setCollapsed(!collapsed);
   };
+
+  const handleOverlayClick = () => {
+    setMobileOpen(false);
+  };
+
+  const handleItemClick = (item) => {
+    setActiveItem(item.id);
+    navigate(item.path);
+    setMobileOpen(false);
+  };
+
+  // Theme mode
+  const isDarkMode = mode === 'dark';
 
   const handleMenuOpen = (event) => {
     setAnchorEl(event.currentTarget);
@@ -68,387 +131,227 @@ export default function DashboardLayout({ children }) {
 
   const handleLogout = () => {
     handleMenuClose();
-    logout();
+    localStorage.removeItem('isLoggedIn');
+    localStorage.removeItem('user');
     navigate('/login');
   };
 
-  const menuItems = [
-    { id: 'dashboard', label: 'Dashboard', icon: <DashboardIcon />, path: '/dashboard' },
-    { id: 'users', label: 'Users', icon: <PeopleIcon />, path: '/dashboard' },
-    { id: 'settings', label: 'Settings', icon: <SettingsIcon />, path: '/dashboard/settings' },
-    { id: 'profile', label: 'Profile', icon: <PersonIcon />, path: '/dashboard/profile' },
-  ];
-
-  const drawerContent = (
-    <Box 
-      sx={{ 
-        height: '100%', 
-        display: 'flex', 
-        flexDirection: 'column',
-        bgcolor: 'background.paper',
-      }}
-    >
-      {/* Drawer Header */}
-      <Box
-        sx={{
-          p: 2,
-          display: 'flex',
-          alignItems: 'center',
-          gap: 2,
-          background: 'linear-gradient(135deg, #667eea 0%, #764ba2 100%)',
-          color: 'white',
-          minHeight: 64,
-        }}
-      >
-        <Avatar 
-          sx={{ 
-            bgcolor: 'rgba(255,255,255,0.2)',
-            width: 40,
-            height: 40,
-          }}
-        >
-          <DashboardIcon />
-        </Avatar>
-        <Box>
-          <Typography variant="h6" fontWeight="bold">
-            Dashboard
-          </Typography>
-          <Typography variant="caption" sx={{ opacity: 0.8 }}>
-            Admin Panel
-          </Typography>
-        </Box>
-      </Box>
-
-      {/* User Info */}
-      <Box sx={{ p: 2 }}>
-        <Box
-          sx={{
-            display: 'flex',
-            alignItems: 'center',
-            gap: 2,
-            p: 2,
-            borderRadius: 3,
-            bgcolor: 'action.hover',
-          }}
-        >
-          <Avatar 
-            sx={{ 
-              bgcolor: 'primary.main',
-              width: 44,
-              height: 44,
-              fontSize: '1.1rem',
-              boxShadow: '0 4px 12px rgba(102, 126, 234, 0.3)',
-            }}
-          >
-            {user?.name?.charAt(0).toUpperCase()}
-          </Avatar>
-          <Box sx={{ flex: 1, minWidth: 0 }}>
-            <Typography 
-              variant="subtitle2" 
-              fontWeight="bold"
-              sx={{ 
-                overflow: 'hidden',
-                textOverflow: 'ellipsis',
-                whiteSpace: 'nowrap'
-              }}
-            >
-              {user?.name}
-            </Typography>
-            <Typography 
-              variant="caption" 
-              color="primary"
-              fontWeight="500"
-            >
-              {ROLE_LABELS[user?.role]}
-            </Typography>
-          </Box>
-        </Box>
-      </Box>
-
-      <Divider sx={{ mx: 2 }} />
-
-      {/* Menu Label */}
-      <Typography 
-        variant="caption" 
-        sx={{ 
-          px: 3, 
-          py: 1.5,
-          color: 'text.secondary',
-          fontWeight: 600,
-          textTransform: 'uppercase',
-          letterSpacing: 1,
-        }}
-      >
-        Main Menu
-      </Typography>
-
-      {/* Menu Items */}
-      <List sx={{ flex: 1, px: 1.5 }}>
-        {menuItems.map((item) => (
-          <ListItem key={item.id} disablePadding sx={{ mb: 0.5 }}>
-            <ListItemButton
-              onClick={() => {
-                navigate(item.path);
-                if (isMobile) setMobileOpen(false);
-              }}
-              sx={{
-                borderRadius: 2,
-                py: 1.25,
-                transition: 'all 0.2s ease',
-                '&:hover': {
-                  bgcolor: 'primary.main',
-                  color: 'white',
-                  transform: 'translateX(4px)',
-                  '& .MuiListItemIcon-root': {
-                    color: 'white',
-                  },
-                },
-              }}
-            >
-              <ListItemIcon sx={{ minWidth: 40 }}>{item.icon}</ListItemIcon>
-              <ListItemText 
-                primary={item.label}
-                primaryTypographyProps={{
-                  fontWeight: 500,
-                }}
-              />
-            </ListItemButton>
-          </ListItem>
-        ))}
-      </List>
-
-      <Divider sx={{ mx: 2 }} />
-
-      {/* Theme Toggle in Drawer */}
-      <Box sx={{ p: 2 }}>
-        <ListItemButton
-          onClick={toggleTheme}
-          sx={{ 
-            borderRadius: 2,
-            py: 1.25,
-          }}
-        >
-          <ListItemIcon sx={{ minWidth: 40 }}>
-            {mode === 'dark' ? <LightModeIcon /> : <DarkModeIcon />}
-          </ListItemIcon>
-          <ListItemText 
-            primary={mode === 'dark' ? 'Light Mode' : 'Dark Mode'} 
-            secondary={mode === 'dark' ? 'Switch to light' : 'Switch to dark'}
-          />
-        </ListItemButton>
-      </Box>
-
-      {/* Version */}
-      <Box sx={{ p: 2, textAlign: 'center' }}>
-        <Typography variant="caption" color="text.secondary">
-          Version 1.0.0
-        </Typography>
-      </Box>
-    </Box>
-  );
+  // Use MUI's theme breakpoints if needed, but for layout simple logic is fine
+  const sidebarWidth = collapsed ? 70 : 250;
 
   return (
     <Box sx={{ display: 'flex', minHeight: '100vh' }}>
-      {/* AppBar */}
-      <AppBar
-        position="fixed"
-        elevation={0}
+      {/* Mobile Toggle Button - Moved into AppBar below */}
+
+      {/* Mobile Overlay */}
+      {isMobile && mobileOpen && (
+        <Box
+          className="sidebar-overlay"
+          onClick={handleOverlayClick}
+          sx={{
+            position: 'fixed',
+            top: 0,
+            left: 0,
+            right: 0,
+            bottom: 0,
+            bgcolor: 'rgba(0,0,0,0.5)',
+            backdropFilter: 'blur(4px)',
+            zIndex: 998,
+          }}
+        />
+      )}
+
+      {/* Sidebar */}
+      <Box
+        ref={sidebarRef}
+        className={`sidebar ${collapsed ? 'collapsed' : ''} ${mobileOpen ? 'mobile-open' : ''}`}
+        component="nav"
         sx={{
-          width: isSidebarOpen ? { lg: `calc(100% - ${DRAWER_WIDTH}px)` } : { lg: '100%' },
-          ml: isSidebarOpen ? { lg: `${DRAWER_WIDTH}px` } : { lg: 0 },
-          bgcolor: 'background.paper',
-          color: 'text.primary',
-          borderBottom: '1px solid',
-          borderColor: 'divider',
-          transition: 'width 0.3s ease, margin 0.3s ease',
+          width: { xs: 250, md: sidebarWidth },
+          flexShrink: 0,
+          transition: 'width 0.3s ease',
         }}
       >
-        <Toolbar>
+        {/* Sidebar Header */}
+        <Box className="sidebar-header">
+          <Box className="sidebar-brand">
+            <span className="brand-icon">💹</span>
+            <span className="brand-text">ExpenseTrack</span>
+          </Box>
           <IconButton
-            color="inherit"
-            edge="start"
-            onClick={handleDrawerToggle}
-            sx={{ 
-              mr: 2,
-              display: { lg: 'none' },
-            }}
+            className="collapse-btn"
+            onClick={handleCollapseToggle}
+            size="small"
+            sx={{ color: 'sidebar.text', display: { xs: 'none', md: 'flex' } }}
           >
-            <MenuIcon />
+            {collapsed ? '→' : '←'}
           </IconButton>
 
-          {/* Desktop Sidebar Toggle - Hamburger Icon */}
-          <Tooltip title={isSidebarOpen ? 'Collapse sidebar' : 'Expand sidebar'}>
-            <IconButton
-              color="inherit"
-              onClick={handleSidebarToggle}
-              sx={{ 
-                mr: 2,
-                display: { xs: 'none', lg: 'flex' },
-              }}
-            >
-              {isSidebarOpen ? <ChevronLeftIcon /> : <MenuIcon />}
-            </IconButton>
-          </Tooltip>
-          
-          {/* Breadcrumb or Title */}
-          <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
-            <HomeIcon sx={{ fontSize: 20, color: 'text.secondary' }} />
-            <Typography variant="subtitle2" color="text.secondary">
-              Dashboard
-            </Typography>
-          </Box>
+        </Box>
 
-          <Box sx={{ flexGrow: 1 }} />
-
-          {/* Right Actions */}
-          <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
-            {/* Theme Toggle */}
-            <Tooltip title={mode === 'dark' ? 'Light Mode' : 'Dark Mode'}>
-              <IconButton 
-                onClick={toggleTheme}
-                sx={{
-                  '&:hover': { 
-                    bgcolor: 'action.hover',
-                  },
-                }}
-              >
-                {mode === 'dark' ? <LightModeIcon /> : <DarkModeIcon />}
-              </IconButton>
-            </Tooltip>
-            
-            {/* Notifications */}
-            <Notification />
-            
-            {/* User Menu */}
-            <Tooltip title="Account">
-              <IconButton 
-                onClick={handleMenuOpen}
-                sx={{ ml: 1 }}
-              >
-                <Avatar 
-                  sx={{ 
-                    width: 36, 
-                    height: 36, 
-                    bgcolor: 'primary.main', 
-                    fontSize: '0.875rem',
-                    boxShadow: '0 4px 12px rgba(102, 126, 234, 0.3)',
-                  }}
+        {/* Navigation Menu */}
+        <Box className="sidebar-nav">
+          <ul className="nav-list">
+            {menuItems.map((item) => (
+              <li key={item.id}>
+                <Tooltip
+                  title={item.label}
+                  placement="right"
+                  disableHoverListener={!collapsed || isMobile}
+                  arrow
                 >
-                  {user?.name?.charAt(0).toUpperCase()}
-                </Avatar>
-              </IconButton>
-            </Tooltip>
+                  <button
+                    className={`nav-item ${activeItem === item.id ? 'active' : ''}`}
+                    onClick={() => handleItemClick(item)}
+                  >
+                    <span className="nav-icon">{item.icon}</span>
+                    <span className="nav-label">{item.label}</span>
+                  </button>
+                </Tooltip>
+              </li>
+            ))}
+          </ul>
+        </Box>
+
+        {/* Sidebar Footer */}
+        <Box className="sidebar-footer">
+          {/* User Profile */}
+          <Box className="user-profile">
+            <Box className="user-avatar">
+              {user?.firstName?.[0] || 'U'}{user?.lastName?.[0] || 'U'}
+            </Box>
+            <Box className="user-info" sx={{ display: { xs: 'flex', md: collapsed ? 'none' : 'flex' } }}>
+              <span className="user-name">{user?.firstName} {user?.lastName}</span>
+              <span className="user-email">{user?.email || ''}</span>
+            </Box>
+
           </Box>
 
-          <Menu
-            anchorEl={anchorEl}
-            open={Boolean(anchorEl)}
-            onClose={handleMenuClose}
-            PaperProps={{
-              sx: {
-                mt: 1,
-                minWidth: 220,
-                borderRadius: 2,
-                boxShadow: '0 8px 32px rgba(0,0,0,0.15)',
-              }
-            }}
-            anchorOrigin={{ vertical: 'bottom', horizontal: 'right' }}
-            transformOrigin={{ vertical: 'top', horizontal: 'right' }}
-          >
-            <Box sx={{ px: 2, py: 1.5 }}>
-              <Typography variant="subtitle2" fontWeight="bold">
-                {user?.name}
-              </Typography>
-              <Typography variant="caption" color="text.secondary">
-                {user?.email || 'user@example.com'}
-              </Typography>
+          {/* Theme Toggle */}
+          <Tooltip title={isDarkMode ? 'Switch to Light Mode' : 'Switch to Dark Mode'} placement="right" disableHoverListener={!collapsed || isMobile} arrow>
+            <Box sx={{
+              display: 'flex',
+              justifyContent: collapsed ? 'center' : 'flex-start',
+              alignItems: 'center',
+              px: collapsed ? 0 : 2,
+              py: 1,
+              width: '100%'
+            }}>
+              <ThemeSwitch checked={isDarkMode} onChange={toggleTheme} />
+              {!collapsed && !isMobile && (
+                <Typography variant="body2" sx={{ ml: 1.5, color: 'sidebar.text', fontWeight: 500 }}>
+                  {isDarkMode ? 'Light Mode' : 'Dark Mode'}
+                </Typography>
+              )}
             </Box>
-            <Divider />
-            <MenuItem onClick={() => { handleMenuClose(); navigate('/dashboard/profile'); }}>
-              <ListItemIcon><PersonIcon fontSize="small" /></ListItemIcon>
-              My Profile
-            </MenuItem>
-            <MenuItem onClick={() => { handleMenuClose(); navigate('/dashboard/settings'); }}>
-              <ListItemIcon><SettingsIcon fontSize="small" /></ListItemIcon>
-              Settings
-            </MenuItem>
-            <Divider />
-            <MenuItem 
-              onClick={handleLogout} 
-              sx={{ 
-                color: 'error.main',
-                '&:hover': { bgcolor: 'error.light', color: 'white' },
-              }}
-            >
-              <ListItemIcon><LogoutIcon fontSize="small" sx={{ color: 'error.main' }} /></ListItemIcon>
-              Logout
-            </MenuItem>
-          </Menu>
-        </Toolbar>
-      </AppBar>
+          </Tooltip>
 
-      {/* Sidebar - Only show when open on desktop */}
-      <Box
-        component="nav"
-        sx={{ 
-          width: { lg: isSidebarOpen ? DRAWER_WIDTH : 0 }, 
-          flexShrink: { lg: 0 },
-          transition: 'width 0.3s ease',
-          overflow: 'hidden',
-        }}
-      >
-        {/* Mobile Drawer */}
-        <Drawer
-          variant="temporary"
-          open={mobileOpen}
-          onClose={handleDrawerToggle}
-          ModalProps={{ keepMounted: true }}
-          sx={{
-            display: { xs: 'block', lg: 'none' },
-            '& .MuiDrawer-paper': { 
-              width: DRAWER_WIDTH,
-              boxShadow: '0 16px 64px rgba(0,0,0,0.2)',
-            },
-          }}
-        >
-          {drawerContent}
-        </Drawer>
-
-        {/* Desktop Drawer - Only rendered when open */}
-        {isSidebarOpen && (
-          <Drawer
-            variant="permanent"
-            sx={{
-              display: { xs: 'none', lg: 'block' },
-              '& .MuiDrawer-paper': { 
-                width: DRAWER_WIDTH, 
-                boxSizing: 'border-box',
-                borderRight: '1px solid',
-                borderColor: 'divider',
-              },
-            }}
-            open
-          >
-            {drawerContent}
-          </Drawer>
-        )}
+        </Box>
       </Box>
 
-      {/* Main Content - Takes full width when sidebar is closed */}
+      {/* Main Content Area */}
       <Box
         component="main"
         sx={{
           flexGrow: 1,
-          p: 3,
-          width: { lg: isSidebarOpen ? `calc(100% - ${DRAWER_WIDTH}px)` : '100%' },
-          mt: '64px',
+          ml: { xs: 0, md: `${sidebarWidth}px` },
+          transition: 'margin-left 0.3s ease',
+          minHeight: '100vh',
           bgcolor: 'background.default',
-          minHeight: 'calc(100vh - 64px)',
-          transition: 'width 0.3s ease, margin 0.3s ease',
+          overflow: 'hidden',
         }}
       >
-        {children}
+        {/* Persistent Top AppBar */}
+        <AppBar
+          position="sticky"
+          sx={{
+            bgcolor: 'background.paper',
+            color: 'text.primary',
+            boxShadow: 1,
+            mt: 0, // Removed top margin
+          }}
+        >
+          <Toolbar>
+            <IconButton
+              color="inherit"
+              aria-label="open drawer"
+              edge="start"
+              onClick={handleDrawerToggle}
+              sx={{ mr: 2, display: { xs: 'flex', md: 'none' } }}
+            >
+              <MenuIcon />
+            </IconButton>
+
+            <Box sx={{ flexGrow: 1, display: 'flex', flexDirection: 'column' }}>
+              <Typography
+                variant="h6"
+                noWrap
+                component="div"
+                sx={{ fontWeight: 600, lineHeight: 1.2 }}
+              >
+                {pageTitle}
+              </Typography>
+              {!isMobile && (
+                <Typography variant="caption" sx={{ color: 'text.secondary', fontWeight: 500 }}>
+                  {currentTime.toLocaleDateString('en-US', { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' })} • {currentTime.toLocaleTimeString()}
+                </Typography>
+              )}
+            </Box>
+
+            <Box sx={{ mr: 2, display: 'flex', alignItems: 'center' }}>
+              <ThemeSwitch checked={isDarkMode} onChange={toggleTheme} />
+            </Box>
+            <Box sx={{ display: 'flex', alignItems: 'center', ml: 1 }}>
+              <LogoutButton onClick={handleLogout} />
+            </Box>
+          </Toolbar>
+        </AppBar>
+
+        {/* Page Content */}
+        <Box sx={{ p: { xs: 2, sm: 3, md: 4 } }}>
+          <Outlet />
+        </Box>
       </Box>
+
+      {/* User Profile Menu */}
+      <Menu
+        anchorEl={anchorEl}
+        open={Boolean(anchorEl)}
+        onClose={handleMenuClose}
+        PaperProps={{
+          elevation: 3,
+          sx: { minWidth: 200, mt: 1 }
+        }}
+        transformOrigin={{ horizontal: 'right', vertical: 'top' }}
+        anchorOrigin={{ horizontal: 'right', vertical: 'bottom' }}
+      >
+        <MenuItem onClick={() => { handleMenuClose(); navigate('/profile'); }}>
+          <ListItemIcon>
+            <AccountCircleIcon fontSize="small" />
+          </ListItemIcon>
+          Profile
+        </MenuItem>
+        <MenuItem onClick={() => { handleMenuClose(); navigate('/settings'); }}>
+          <ListItemIcon>
+            <SettingsIcon fontSize="small" />
+          </ListItemIcon>
+          Settings
+        </MenuItem>
+        <Divider />
+        <MenuItem onClick={handleLogout}>
+          <ListItemIcon>
+            <LogoutIcon fontSize="small" />
+          </ListItemIcon>
+          Logout
+        </MenuItem>
+      </Menu>
+      {/* Toast notifications */}
+      <ToastContainer position="top-right" autoClose={3000} hideProgressBar={false} newestOnTop closeOnClick rtl={false} pauseOnFocusLoss draggable pauseOnHover />
+
+      {/* Global Calculator Widget */}
+      <CalculatorWidget />
     </Box>
   );
-}
+};
+
+export default DashboardLayout;
