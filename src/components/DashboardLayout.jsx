@@ -131,8 +131,7 @@ const DashboardLayout = () => {
 
   const handleLogout = () => {
     handleMenuClose();
-    localStorage.removeItem('isLoggedIn');
-    localStorage.removeItem('user');
+    logout();
     navigate('/login');
   };
 

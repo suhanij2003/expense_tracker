@@ -6,8 +6,8 @@ const ProtectedRoute = ({ children, requiredRole }) => {
   const { user, loading } = useAuth();
   const location = useLocation();
 
-  // Wait for authentication check to complete before redirecting
-  if (loading) {
+  // Wait for authentication check to complete if no user is found
+  if (loading && !user) {
     return (
       <Box sx={{ display: 'flex', justifyContent: 'center', alignItems: 'center', height: '100vh', width: '100vw' }}>
         <CircularProgress size={60} thickness={4} sx={{ color: 'primary.main' }} />
